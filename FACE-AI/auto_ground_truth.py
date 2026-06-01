@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
 auto_ground_truth.py -- Baidu API auto face detection + interactive pose annotation
@@ -29,6 +29,7 @@ IMAGE_DIR = "class_images"
 CSV_PATH = "classroom_ground_truth.csv"
 CROP_SIZE = 150
 PANEL_W = 500
+YAW_THRESHOLD = 21  # yaw threshold for distraction detection
 
 # ================= 核心修改区：对齐论文的4种状态 =================
 POSE_LABELS = {
@@ -477,6 +478,15 @@ def run_prediction():
     for img_idx, (img_path, row_indices) in enumerate(img_groups.items()):
         print(f"  [{img_idx+1}/{total}] {os.path.basename(img_path)} ... ", end="", flush=True)
 
+        # Check if image exists
+        if not os.path.exists(img_path):
+            alt_path = os.path.join(IMAGE_DIR, os.path.basename(img_path))
+            if os.path.exists(alt_path):
+                img_path = alt_path
+            else:
+                print("image not found, keep existing data")
+                continue
+
         baidu_api_limiter.wait()
         faces = bd.detect_faces(img_path)
 
@@ -516,10 +526,6 @@ def run_prediction():
 
             rows[idx]["detected_yaw"] = str(round(yaw, 1))
             rows[idx]["detected_pitch"] = str(round(pitch, 1))
-            matched += 1
-            angle = matched_face.get("angle", {})
-            pitch = angle.get("pitch", 0)
-            yaw = angle.get("yaw", 0)
 
             loc = matched_face["location"]
             left = loc.get("left", 0)
@@ -530,7 +536,7 @@ def run_prediction():
             # AYC OFF
             if pitch < -25:
                 pose_off = "Head Down"
-            elif abs(yaw) > 30:
+            elif abs(yaw) > YAW_THRESHOLD:
                 pose_off = "Distracted"
             else:
                 pose_off = "Attentive"
@@ -542,7 +548,7 @@ def run_prediction():
 
             if pitch < -25:
                 pose_on = "Head Down"
-            elif abs(yaw_corrected) > 30:
+            elif abs(yaw_corrected) > YAW_THRESHOLD:
                 pose_on = "Distracted"
             else:
                 pose_on = "Attentive"
