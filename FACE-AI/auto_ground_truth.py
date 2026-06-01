@@ -29,7 +29,7 @@ IMAGE_DIR = "class_images"
 CSV_PATH = "classroom_ground_truth.csv"
 CROP_SIZE = 150
 PANEL_W = 500
-YAW_THRESHOLD = 21  # yaw threshold for distraction detection
+YAW_THRESHOLD = 30  # yaw threshold for distraction detection
 
 # ================= 核心修改区：对齐论文的4种状态 =================
 POSE_LABELS = {
